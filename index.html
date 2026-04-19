@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商工具箱 - 一站式工作效率工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        'primary-dark': '#4f46e5',
+                        'primary-light': '#818cf8',
+                        secondary: '#22c55e',
+                        'secondary-dark': '#16a34a',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        'bg-main': '#f8fafc',
+                        'bg-card': '#ffffff',
+                        'bg-hover': '#f1f5f9',
+                        border: '#e2e8f0',
+                        'text-main': '#1e293b',
+                        'text-second': '#64748b',
+                        'text-muted': '#94a3b8',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-in { animation: slideIn 0.3s ease-in-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .card-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        .card-hover { transition: all 0.2s ease-in-out; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .nav-item { transition: all 0.2s ease; }
+        .nav-item:hover { background: rgba(99, 102, 241, 0.1); }
+        .nav-item.active { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; }
+        .nav-item.active .nav-icon { color: white; }
+        .switch-toggle { transition: all 0.3s ease; }
+        .switch-toggle.active { transform: translateX(22px); }
+        .input-focus { transition: all 0.2s ease-in-out; }
+        .input-focus:focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        .drop-zone { transition: all 0.3s ease; }
+        .drop-zone.drag-over { animation: pulse-border 1.5s infinite; background: rgba(99, 102, 241, 0.1) !important; }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(99, 102, 241, 0.4); }
+            50% { border-color: rgba(99, 102, 241, 1); }
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .toast { animation: toastIn 0.3s ease; }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-bg-main min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- 左侧导航栏 -->
+        <aside class="w-64 bg-bg-card border-r border-border flex flex-col fixed h-full">
+            <!-- Logo区域 -->
+            <div class="p-6 border-b border-border">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center">
+                        <i class="fa fa-cube text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-text-main">小工具箱</h1>
+                        <p class="text-xs text-text-muted">工作效率工具集合</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <nav class="flex-1 p-4 overflow-y-auto">
+                <div class="space-y-2">
+                    <!-- 表格工具组 -->
+                    <div class="mb-6">
+                        <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 px-3">表格处理</div>
+                        
+                        <button onclick="switchTool('excel-convert')" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left" data-tool="excel-convert">
+                            <i class="fa fa-file-excel-o nav-icon text-primary text-lg w-6"></i>
+                            <div>
+                                <div class="font-medium text-sm">上货表格转换</div>
+                                <div class="text-xs text-text-muted">组合商品转上传模板</div>
+                            </div>
+                        </button>
+                        
+                        <button onclick="switchTool('cost-processing')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left" data-tool="cost-processing">
+                            <i class="fa fa-calculator nav-icon text-primary text-lg w-6"></i>
+                            <div>
+                                <div class="font-medium text-sm">成本项处理</div>
+                                <div class="text-xs text-text-muted">数据清洗与透视表</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- 商品工具组 -->
+                    <div class="mb-6">
+                        <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 px-3">商品管理</div>
+                        
+                        <button onclick="switchTool('qr-generator')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left" data-tool="qr-generator">
+                            <i class="fa fa-qrcode nav-icon text-primary text-lg w-6"></i>
+                            <div>
+                                <div class="font-medium text-sm">二维码生成</div>
+                                <div class="text-xs text-text-muted">淘宝订单二维码</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- 底部信息 -->
+            <div class="p-4 border-t border-border">
+                <div class="text-xs text-text-muted text-center">
+                    <p>本地运行 · 数据安全</p>
+                    <p class="mt-1">v1.0.0</p>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 主内容区 -->
+        <main class="flex-1 ml-64">
+            <!-- 工具内容区域 -->
+            <div id="toolContent" class="p-8">
+                <!-- Excel转换工具 - 默认显示 -->
+                <div id="excel-convert" class="tool-panel fade-in">
+                    <!-- 页面标题 -->
+                    <div class="mb-8 flex items-start justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-text-main flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                                    <i class="fa fa-file-excel-o text-green-600 text-xl"></i>
+                                </div>
+                                Excel转换工具
+                                <button onclick="showHelp('excel-convert')" class="text-text-muted hover:text-primary transition-colors ml-2" title="使用说明">
+                                    <i class="fa fa-question-circle text-xl"></i>
+                                </button>
+                            </h1>
+                            <p class="text-text-second mt-2">将组合商品表格转换为上传模板</p>
+                        </div>
+                    </div>
+                    
+                    <div class="max-w-xl mx-auto">
+                        <div class="bg-bg-card rounded-2xl p-8 card-shadow">
+                            <div id="page1" class="tool-page active">
+                                <div id="dropZone" class="border-3 border-dashed border-primary/40 bg-primary/5 rounded-2xl p-10 text-center cursor-pointer hover:border-primary hover:bg-primary/10 transition-all mb-6">
+                                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+                                    <div id="dropIcon" class="text-6xl mb-4">📂</div>
+                                    <div id="dropText" class="text-text-main font-medium">拖拽 Excel 文件到此处</div>
+                                    <div class="text-text-muted text-sm mt-1">或点击选择文件 · 支持 .xlsx .xls</div>
+                                    <div id="fileName" class="text-green-600 font-medium mt-3 hidden"></div>
+                                </div>
+                                
+                                <button id="nextBtn" class="w-full bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    下一步 →
+                                </button>
+                            </div>
+                            
+                            <div id="page2" class="tool-page hidden">
+                                <h2 class="text-xl font-semibold text-text-main mb-6 flex items-center gap-2">
+                                    <i class="fa fa-gear text-primary"></i> 转换设置
+                                </h2>
+                                
+                                <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                                    <div class="text-xs text-text-muted mb-1">已选文件</div>
+                                    <div id="inputFileName" class="font-medium text-text-main">-</div>
+                                </div>
+                                
+                                <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" id="includeSinglePack" class="w-5 h-5 rounded accent-primary">
+                                        <span class="text-sm text-text-main">包含1支装数据（勾选则输出包含1支装，否则只输出套装）</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="flex gap-4">
+                                    <button id="backBtn1" class="flex-1 bg-gray-100 hover:bg-gray-200 text-text-main py-3 rounded-xl font-medium transition-colors">
+                                        ← 返回
+                                    </button>
+                                    <button id="convertBtn" class="flex-1 bg-secondary hover:bg-secondary-dark text-white py-3 rounded-xl font-medium transition-colors">
+                                        开始转换 🚀
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="page3" class="tool-page hidden">
+                                <div class="text-center mb-6">
+                                    <div class="text-6xl mb-4 animate-spin" style="animation: spin 1.5s linear infinite;">⚙️</div>
+                                    <h2 class="text-xl font-semibold text-text-main">正在转换...</h2>
+                                </div>
+                                
+                                <div class="bg-gray-50 rounded-xl p-4 mb-6 max-h-40 overflow-y-auto" id="logBox"></div>
+                                
+                                <div class="bg-gray-100 rounded-full h-3 overflow-hidden">
+                                    <div id="progressFill" class="bg-primary h-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                                <div id="progressText" class="text-center text-primary font-medium mt-2">0%</div>
+                            </div>
+                            
+                            <div id="page4" class="tool-page hidden">
+                                <div class="text-center mb-6">
+                                    <div id="resultIcon" class="text-6xl mb-4">✅</div>
+                                    <h2 id="resultTitle" class="text-xl font-bold text-green-600 mb-2">转换成功！</h2>
+                                    <p id="resultMessage" class="text-text-second whitespace-pre-line"></p>
+                                </div>
+                                
+                                <div id="resultFile" class="bg-blue-50 text-blue-600 px-4 py-3 rounded-xl text-center font-medium mb-6"></div>
+                                
+                                <button id="againBtn" class="w-full bg-primary hover:bg-primary-dark text-white py-3 rounded-xl font-medium transition-colors">
+                                    🔄 再转一个
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 成本项处理工具 -->
+                <div id="cost-processing" class="tool-panel hidden">
+                    <div class="mb-8 flex items-start justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-text-main flex items-center gap-3">
+                                <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                                    <i class="fa fa-calculator text-purple-600 text-xl"></i>
+                                </div>
+                                成本项处理工具
+                                <button onclick="showHelp('cost-processing')" class="text-text-muted hover:text-primary transition-colors ml-2" title="使用说明">
+                                    <i class="fa fa-question-circle text-xl"></i>
+                                </button>
+                            </h1>
+                            <p class="text-text-second mt-2">自动化数据清洗与透视表生成</p>
+                        </div>
+                    </div>
+                    
+                    <div class="max-w-3xl mx-auto">
+                        <!-- 上传区域 -->
+                        <div class="bg-bg-card rounded-2xl p-8 card-shadow mb-6">
+                            <div class="flex items-center gap-4 mb-6">
+                                <i class="fa fa-file-excel-o text-primary text-2xl"></i>
+                                <h2 class="text-lg font-semibold text-text-main">选择Excel文件</h2>
+                            </div>
+                            
+                            <div id="costUploadZone" class="border-3 border-dashed border-primary/40 bg-primary/5 rounded-2xl p-10 text-center cursor-pointer hover:border-primary hover:bg-primary/10 transition-all mb-6">
+                                <input type="file" id="costFileInput" accept=".xlsx,.xls" class="hidden">
+                                <div class="text-5xl mb-4">📂</div>
+                                <div class="text-text-main font-medium mb-2">拖拽 Excel 文件到此处</div>
+                                <div class="text-text-muted text-sm">或点击选择 · 支持 .xlsx .xls</div>
+                            </div>
+                            
+                            <div id="costSelectedFile" class="bg-primary-light/30 rounded-xl p-4 mb-6 hidden">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-3xl">📄</span>
+                                    <div class="flex-1">
+                                        <div id="costFileName" class="font-medium text-text-main"></div>
+                                        <div id="costFileSize" class="text-sm text-text-muted"></div>
+                                    </div>
+                                    <button id="costRemoveBtn" class="w-8 h-8 bg-danger text-white rounded-full hover:bg-red-600 transition-colors">×</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                                <label class="text-sm text-text-main mb-2 block">输出文件名</label>
+                                <input type="text" id="costOutputFileName" value="成本项更新" class="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent input-focus">
+                            </div>
+                            
+                            <button id="costStartBtn" class="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-white py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                🚀 开始处理
+                            </button>
+                        </div>
+                        
+                        <!-- 处理进度区域 -->
+                        <div id="costProcessingCard" class="bg-bg-card rounded-2xl p-8 card-shadow hidden">
+                            <h3 class="text-lg font-semibold text-text-main mb-6 flex items-center gap-2">
+                                <i class="fa fa-tasks text-primary"></i> 处理进度
+                            </h3>
+                            
+                            <!-- 统计信息 -->
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-primary/10 rounded-xl p-4 text-center">
+                                    <div id="costOriginalRows" class="text-2xl font-bold text-primary">-</div>
+                                    <div class="text-sm text-text-muted">原始行数</div>
+                                </div>
+                                <div class="bg-purple-100 rounded-xl p-4 text-center">
+                                    <div id="costOriginalCols" class="text-2xl font-bold text-purple-600">-</div>
+                                    <div class="text-sm text-text-muted">原始列数</div>
+                                </div>
+                            </div>
+                            
+                            <!-- 处理步骤 -->
+                            <div id="costSteps" class="space-y-3 mb-6">
+                                <!-- 步骤动态生成 -->
+                            </div>
+                            
+                            <!-- 进度条 -->
+                            <div class="bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div id="costProgressBar" class="bg-gradient-to-r from-primary to-purple-600 h-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div id="costProgressText" class="text-center text-sm text-text-muted mt-2">0%</div>
+                        </div>
+                        
+                        <!-- 完成区域 -->
+                        <div id="costCompleteCard" class="bg-bg-card rounded-2xl p-8 card-shadow hidden">
+                            <div class="text-center mb-6">
+                                <div class="text-6xl mb-4 animate-bounce">🎉</div>
+                                <h2 class="text-2xl font-bold text-text-main mb-2">处理完成！</h2>
+                                <p class="text-text-muted">数据已成功处理并导出</p>
+                            </div>
+                            
+                            <div class="bg-green-100 text-green-700 px-4 py-3 rounded-xl text-center mb-6">
+                                ⏱️ 处理耗时：<span id="costProcessTime">0</span>秒
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                                <div class="text-sm text-text-muted mb-1">输出文件</div>
+                                <div id="costExportFileName" class="font-medium text-text-main">成本项更新.xlsx</div>
+                                <div class="text-sm text-text-muted mt-1">导出行数：<span id="costFinalRowCount" class="font-medium">-</span></div>
+                            </div>
+                            
+                            <div class="flex gap-4">
+                                <button id="costDownloadBtn" class="flex-1 bg-secondary hover:bg-secondary-dark text-white py-3 rounded-xl font-medium transition-colors">
+                                    ⬇️ 下载结果文件
+                                </button>
+                                <button id="costResetBtn" class="flex-1 bg-warning hover:opacity-90 text-white py-3 rounded-xl font-medium transition-colors">
+                                    🔄 重新开始
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+
+                <!-- 二维码生成工具 -->
+                <div id="qr-generator" class="tool-panel hidden">
+                    <div class="mb-8 flex items-start justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-text-main flex items-center gap-3">
+                                <div class="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
+                                    <i class="fa fa-qrcode text-cyan-600 text-xl"></i>
+                                </div>
+                                淘宝订单二维码生成
+                                <button onclick="showHelp('qr-generator')" class="text-text-muted hover:text-primary transition-colors ml-2" title="使用说明">
+                                    <i class="fa fa-question-circle text-xl"></i>
+                                </button>
+                            </h1>
+                            <p class="text-text-muted mt-2">快速生成淘宝订单二维码，支持1拖N分组</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-6">
+                        <!-- 左侧：商品管理 -->
+                        <div class="col-span-2 space-y-6">
+                            <!-- 工具栏 -->
+                            <div class="bg-bg-card rounded-2xl p-6 card-shadow">
+                                <div class="flex flex-wrap items-center justify-between gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <label for="qrExcelUpload" class="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 cursor-pointer transition-colors">
+                                            <i class="fa fa-upload"></i> 导入表格
+                                        </label>
+                                        <input type="file" id="qrExcelUpload" accept=".xlsx,.xls" class="hidden">
+                                        <div id="qrDropArea" class="px-6 py-2.5 border-2 border-dashed border-border rounded-xl text-text-second font-medium cursor-pointer hover:border-primary hover:bg-primary-light/20 transition-colors">
+                                            或拖拽到此处
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-6">
+                                        <div class="flex items-center gap-2">
+                                            <label class="text-sm text-text-muted">1拖N:</label>
+                                            <input type="number" id="qrDragN" min="1" max="50" value="1" class="w-16 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent input-focus text-center">
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <label class="text-sm text-text-muted">禁用红包</label>
+                                            <div id="qrDisableRedPacket" class="relative w-12 h-6 bg-text-muted rounded-full cursor-pointer transition-colors">
+                                                <div class="switch-toggle absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex gap-3">
+                                        <button id="qrGenerateBtn" class="bg-secondary hover:bg-secondary-dark text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-colors">
+                                            <i class="fa fa-magic"></i> 生成二维码
+                                        </button>
+                                        <button id="qrClearBtn" class="bg-danger hover:bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-colors">
+                                            <i class="fa fa-trash"></i> 清空
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 商品列表 -->
+                            <div class="bg-bg-card rounded-2xl p-6 card-shadow">
+                                <h2 class="text-lg font-semibold text-text-main mb-6">商品列表</h2>
+                                
+                                <!-- 空状态 -->
+                                <div id="qrEmptyState" class="py-16 text-center">
+                                    <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fa fa-box text-3xl text-primary"></i>
+                                    </div>
+                                    <p class="text-text-main font-medium mb-2">暂无商品</p>
+                                    <p class="text-text-muted text-sm">点击上方「导入表格」按钮导入数据</p>
+                                </div>
+                                
+                                <!-- 商品卡片 -->
+                                <div id="qrGoodsContainer" class="space-y-4 hidden">
+                                </div>
+                                
+                                <!-- 底部操作 -->
+                                <div id="qrBottomActions" class="mt-6 flex items-center justify-between pt-4 border-t border-border hidden">
+                                    <div class="flex gap-3">
+                                        <button id="qrSelectAllBtn" class="bg-secondary hover:bg-secondary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                            <i class="fa fa-check-square-o"></i> 全选
+                                        </button>
+                                        <button id="qrBatchDeleteBtn" class="bg-danger hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                            <i class="fa fa-trash"></i> 批量删除
+                                        </button>
+                                    </div>
+                                    <div class="text-sm text-text-muted">
+                                        已选择 <span id="qrSelectedCount" class="font-medium text-text-main">0</span> 个商品
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧：二维码预览 -->
+                        <div class="space-y-6">
+                            <div class="bg-bg-card rounded-2xl p-6 card-shadow">
+                                <h2 class="text-lg font-semibold text-text-main mb-6">二维码预览</h2>
+                                
+                                <!-- 空状态 -->
+                                <div id="qrPreviewEmpty" class="py-16 text-center">
+                                    <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fa fa-qrcode text-3xl text-primary"></i>
+                                    </div>
+                                    <p class="text-text-main font-medium mb-2">暂无二维码</p>
+                                    <p class="text-text-muted text-sm">导入表格后点击生成</p>
+                                </div>
+                                
+                                <!-- 二维码容器 -->
+                                <div id="qrPreviewContainer" class="space-y-4 hidden">
+                                </div>
+                                
+                                <div id="qrPreviewActions" class="mt-6 flex justify-end gap-3 pt-4 border-t border-border hidden">
+                                    <button id="qrCopyImageBtn" onclick="copyQrCardsAsImage()" class="bg-secondary hover:bg-secondary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="fa fa-image mr-1"></i>复制全部图片
+                                    </button>
+                                    <button id="qrDownloadAllBtn" onclick="qrBatchDownload()" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                        <i class="fa fa-download mr-1"></i>批量下载
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast通知 -->
+    <div id="toast" class="fixed top-6 right-6 bg-bg-card rounded-xl shadow-lg p-5 max-w-sm transform translate-x-full transition-transform duration-300 z-50 hidden">
+        <div class="flex items-start gap-4">
+            <div id="toastIcon" class="text-secondary flex-shrink-0 mt-0.5">
+                <i class="fa fa-check-circle text-xl"></i>
+            </div>
+            <div class="flex-1">
+                <h4 id="toastTitle" class="font-medium text-text-main"></h4>
+                <p id="toastMessage" class="text-text-second text-sm mt-1"></p>
+            </div>
+            <button id="closeToast" class="text-text-muted hover:text-text-main flex-shrink-0">
+                <i class="fa fa-times text-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 帮助说明模态框 -->
+    <div id="helpModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-bg-card rounded-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-border flex items-center justify-between">
+                <h3 id="helpTitle" class="text-lg font-semibold text-text-main flex items-center gap-2">
+                    <i class="fa fa-question-circle text-primary"></i>
+                    使用说明
+                </h3>
+                <button onclick="closeHelp()" class="w-8 h-8 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div id="helpContent" class="p-6 overflow-y-auto flex-1">
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载动画 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-bg-card rounded-2xl p-8 flex flex-col items-center">
+            <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p id="loadingText" class="text-text-main font-medium">处理中...</p>
+        </div>
+    </div>
+    
+    <script>
+        // =============================================
+        // 全局变量
+        // =============================================
+        let currentTool = 'excel-convert';
+        let currentSubPage = 'page1';
+        
+        // Excel转换工具变量
+        let excelSelectedFile = null;
+        let excelOutputXlsx = null;
+        
+        // 成本项处理变量
+        let costResultData = null;
+        let costSelectedFileData = null;
+        
+        // 二维码生成变量
+        let qrSkuData = [];
+        let qrSelectedItems = [];
+        let qrGeneratedQrs = [];
+        let qrDisableRedPacket = false;
+        
+        // =============================================
+        // 工具切换
+        // =============================================
+        function switchTool(toolName) {
+            currentTool = toolName;
+            
+            // 更新导航
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.tool === toolName) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // 更新内容
+            document.querySelectorAll('.tool-panel').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            document.getElementById(toolName).classList.remove('hidden');
+            document.getElementById(toolName).classList.add('fade-in');
+            
+            // 初始化对应工具
+            if (toolName === 'qr-generator') {
+                initQrGenerator();
+            }
+        }
+        
+        // =============================================
+        // Toast通知
+        // =============================================
+        function setButtonLoading(btn, loading, loadingText = '处理中...') {
+            if (loading) {
+                btn.disabled = true;
+                btn.dataset.originalText = btn.innerHTML;
+                btn.innerHTML = `<i class="fa fa-spinner fa-spin mr-2"></i>${loadingText}`;
+                btn.classList.add('opacity-75');
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+                btn.classList.remove('opacity-75');
+            }
+        }
+
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            const iconClass = type === 'success' ? 'text-secondary' : type === 'error' ? 'text-danger' : 'text-warning';
+            toastIcon.className = iconClass + ' flex-shrink-0 mt-0.5';
+            toastIcon.innerHTML = type === 'success' ? '<i class="fa fa-check-circle text-xl"></i>' : 
+                                  type === 'error' ? '<i class="fa fa-exclamation-circle text-xl"></i>' : 
+                                  '<i class="fa fa-exclamation-triangle text-xl"></i>';
+            
+            toast.classList.remove('hidden');
+            toast.classList.add('toast');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+        
+        document.getElementById('closeToast').addEventListener('click', () => {
+            document.getElementById('toast').classList.add('translate-x-full');
+            setTimeout(() => document.getElementById('toast').classList.add('hidden'), 300);
+        });
+
+        // =============================================
+        // 帮助说明
+        // =============================================
+        const helpContent = {
+            'excel-convert': {
+                title: '📊 Excel转换工具 - 使用说明',
+                content: `
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">功能说明</h4>
+                            <p class="text-text-second">将包含"组合款式编码"、"组合颜色规格"、"组合商品编码"、"组合成本价"等列的Excel表格，转换为淘宝/天猫上传模板格式。</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">Excel表格要求</h4>
+                            <ul class="text-text-second list-disc list-inside space-y-1">
+                                <li>必须包含 <code class="bg-gray-100 px-1 rounded">组合款式编码</code> 列 - 用于识别商品组</li>
+                                <li>必须包含 <code class="bg-gray-100 px-1 rounded">组合颜色规格</code> 列 - SKU规格</li>
+                                <li>必须包含 <code class="bg-gray-100 px-1 rounded">组合商品编码</code> 列 - 商家编码</li>
+                                <li>必须包含 <code class="bg-gray-100 px-1 rounded">组合成本价</code> 列 - 价格</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">操作步骤</h4>
+                            <ol class="text-text-second list-decimal list-inside space-y-1">
+                                <li>拖拽或选择Excel文件到上传区域</li>
+                                <li>点击"下一步"</li>
+                                <li>选择是否包含"1支装"数据</li>
+                                <li>点击"开始转换"</li>
+                                <li>转换完成后自动下载结果文件</li>
+                            </ol>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p class="text-blue-700 text-sm"><strong>💡 提示：</strong>输出文件名为"上传表格+时间戳"，可在转换设置页面修改。</p>
+                        </div>
+                    </div>
+                `
+            },
+            'cost-processing': {
+                title: '🧮 成本项处理工具 - 使用说明',
+                content: `
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">功能说明</h4>
+                            <p class="text-text-second">对淘宝订单数据进行清洗，删除退款、非单个宝贝、包含(合)等无效数据，生成成本透视表。</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">数据清洗步骤</h4>
+                            <ul class="text-text-second list-disc list-inside space-y-1">
+                                <li><strong>删除退款订单</strong> - 过滤"是否退款=是"的订单</li>
+                                <li><strong>删除非单个宝贝</strong> - 过滤"子订单宝贝数量>1"的订单</li>
+                                <li><strong>删除(合)订单</strong> - 过滤利润中包含"(合)"的合并订单</li>
+                                <li><strong>转换运费</strong> - 将运费列转换为数字类型</li>
+                                <li><strong>删除高运费</strong> - 过滤采购单运费≥8的订单</li>
+                                <li><strong>过滤比值</strong> - 保留(实收款-采购金额)/利润=1的有效订单</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">输出结果</h4>
+                            <p class="text-text-second">按"SKUID"和"本店宝贝"分组，计算平均采购成本，生成透视表。</p>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                            <p class="text-yellow-700 text-sm"><strong>⚠️ 注意：</strong>Excel文件需要包含"是否退款"、"子订单宝贝数量"、"利润"、"实收款（已采购）"、"采购金额(含运费)"等列。</p>
+                        </div>
+                    </div>
+                `
+            },
+            'qr-generator': {
+                title: '📱 二维码生成工具 - 使用说明',
+                content: `
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">功能说明</h4>
+                            <p class="text-text-second">将淘宝订单数据生成二维码，扫码可直接下单。适合线下团购、门店录单等场景。</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">Excel表格要求</h4>
+                            <ul class="text-text-second list-disc list-inside space-y-1">
+                                <li><code class="bg-gray-100 px-1 rounded">商品ID</code> 或 <code class="bg-gray-100 px-1 rounded">宝贝ID</code> - 商品唯一标识</li>
+                                <li><code class="bg-gray-100 px-1 rounded">标题</code> - 商品名称（可选）</li>
+                                <li><code class="bg-gray-100 px-1 rounded">SKUID</code> - SKU编号</li>
+                                <li><code class="bg-gray-100 px-1 rounded">SKU商家编码</code> - 商家编码</li>
+                                <li><code class="bg-gray-100 px-1 rounded">SKU库存</code> - 库存数量（0=缺货）</li>
+                                <li><code class="bg-gray-100 px-1 rounded">SKU价格</code> - 价格</li>
+                                <li><code class="bg-gray-100 px-1 rounded">颜色尺码</code> - 规格名称</li>
+                                <li><code class="bg-gray-100 px-1 rounded">颜色图</code> - 商品图片URL</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">参数设置</h4>
+                            <ul class="text-text-second list-disc list-inside space-y-1">
+                                <li><strong>1拖N</strong> - 设置几个商品生成一个二维码</li>
+                                <li><strong>禁用红包</strong> - 开启后生成的链接不使用红包</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text-main mb-2">操作步骤</h4>
+                            <ol class="text-text-second list-decimal list-inside space-y-1">
+                                <li>导入包含商品数据的Excel文件</li>
+                                <li>为每个商品选择SKU规格</li>
+                                <li>设置购买数量</li>
+                                <li>点击"生成二维码"</li>
+                                <li>下载或复制单个/批量二维码</li>
+                            </ol>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                            <p class="text-purple-700 text-sm"><strong>💡 提示：</strong>库存为0的SKU会自动禁用，无法选择。系统默认选择有库存的最低价格SKU。</p>
+                        </div>
+                    </div>
+                `
+            }
+        };
+
+        function showHelp(toolId) {
+            const help = helpContent[toolId];
+            if (!help) return;
+            document.getElementById('helpTitle').innerHTML = `<i class="fa fa-question-circle text-primary"></i> ${help.title}`;
+            document.getElementById('helpContent').innerHTML = help.content;
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        document.getElementById('helpModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('helpModal')) {
+                closeHelp();
+            }
+        });
+        
+        // =============================================
+        // 加载动画
+        // =============================================
+        function showLoading(text = '处理中...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+        
+        // =============================================
+        // Excel转换工具
+        // =============================================
+        (function initExcelConvert() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const nextBtn = document.getElementById('nextBtn');
+            const backBtn1 = document.getElementById('backBtn1');
+            const convertBtn = document.getElementById('convertBtn');
+            const againBtn = document.getElementById('againBtn');
+
+            if (dropZone && fileInput) {
+                dropZone.classList.add('drop-zone');
+                dropZone.addEventListener('click', () => fileInput.click());
+                dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+                dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drag-over');
+                    if (e.dataTransfer.files[0]) handleExcelFile(e.dataTransfer.files[0]);
+                });
+            }
+            
+            if (fileInput) {
+                fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleExcelFile(e.target.files[0]); });
+            }
+
+            function handleExcelFile(file) {
+                if (!dropZone || !nextBtn) return;
+                const maxSize = 50 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    showToast('文件过大', '请选择50MB以内的Excel文件', 'error');
+                    return;
+                }
+                if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                    showToast('错误', '请选择Excel文件', 'error');
+                    return;
+                }
+                excelSelectedFile = file;
+                dropZone.classList.remove('border-primary/40', 'bg-primary/5', 'hover:border-primary', 'hover:bg-primary/10');
+                dropZone.classList.add('border-green-500', 'bg-green-50');
+                const dropIcon = document.getElementById('dropIcon');
+                const dropText = document.getElementById('dropText');
+                const fileNameEl = document.getElementById('fileName');
+                if (dropIcon) dropIcon.textContent = '✅';
+                if (dropText) dropText.textContent = '文件已选择';
+                if (fileNameEl) {
+                    fileNameEl.textContent = file.name + ' (' + formatSize(file.size) + ')';
+                    fileNameEl.classList.remove('hidden');
+                }
+                nextBtn.disabled = false;
+            }
+
+            if (nextBtn) nextBtn.addEventListener('click', () => {
+                if (!excelSelectedFile) return;
+                const inputFileName = document.getElementById('inputFileName');
+                if (inputFileName) inputFileName.textContent = excelSelectedFile.name;
+                showExcelPage('page2');
+            });
+            if (backBtn1) backBtn1.addEventListener('click', () => showExcelPage('page1'));
+            if (convertBtn) convertBtn.addEventListener('click', startExcelConversion);
+            if (againBtn) againBtn.addEventListener('click', resetExcelConvert);
+        })();
+        
+        function showExcelPage(page) {
+            document.querySelectorAll('.tool-page').forEach(p => p.classList.add('hidden'));
+            document.getElementById(page).classList.remove('hidden');
+            currentSubPage = page;
+        }
+        
+        async function startExcelConversion() {
+            showExcelPage('page3');
+            const logBox = document.getElementById('logBox');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            logBox.innerHTML = '';
+            
+            function addLog(msg) {
+                const div = document.createElement('div');
+                div.textContent = msg;
+                logBox.appendChild(div);
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+            
+            function updateProgress(v) {
+                progressFill.style.width = v + '%';
+                progressText.textContent = v + '%';
+            }
+            
+            try {
+                addLog('📂 读取文件...');
+                updateProgress(5);
+                
+                // 直接使用 arrayBuffer() - 与 deepseek 相同方式
+                const arrayBuffer = await excelSelectedFile.arrayBuffer();
+                
+                addLog('📊 解析中...');
+                updateProgress(15);
+                
+                // 简化的 XLSX 读取
+                const workbook = XLSX.read(arrayBuffer);
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const df = XLSX.utils.sheet_to_json(sheet);
+                
+                addLog(`✅ 读取完成，共 ${df.length} 行`);
+                updateProgress(30);
+                
+                // 检查数据量
+                if (df.length > 50000) {
+                    addLog('⚠️ 数据量较大(' + df.length + '行)，正在处理...');
+                }
+                
+                const groups = {};
+                df.forEach(row => {
+                    let key = String(row['组合款式编码'] || '').trim().replace(/-+$/, '');
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(row);
+                });
+                
+                const totalGroups = Object.keys(groups).length;
+                addLog(`📊 发现 ${totalGroups} 个商品组`);
+                
+                const includeSingle = document.getElementById('includeSinglePack').checked;
+                const outputData = [];
+                
+                for (const groupName in groups) {
+                    const group_df = groups[groupName];
+                    const skuaiContent = [];
+                    const allSpecs = [];
+                    const singleSpecsSeen = new Set();
+                    
+                    for (const row of group_df) {
+                        let spec = String(row['组合颜色规格'] || '').trim()
+                            .replace('＋', '+').replace(/ /g, '').replace(/　/g, '').replace('_x002B_', '+');
+                        const cost = parseFloat(row['组合成本价']) || 0;
+                        const code = row['组合商品编码'] || '';
+                        
+                        const hasPen = spec.includes('笔芯');
+                        const isPencilPen = spec.includes('铅笔芯');
+                        const isSingle = spec.includes('一支装');
+                        
+                        if (!includeSingle && isSingle) continue;
+                        
+                        let formattedSpec, useCode, specKey;
+                        
+                        if (isSingle) {
+                            if (hasPen) {
+                                formattedSpec = isPencilPen ? '随机1支+1盒铅芯（约20支）' : '随机1支+10支笔芯';
+                            } else {
+                                formattedSpec = '随机1支';
+                            }
+                            specKey = formattedSpec;
+                            if (singleSpecsSeen.has(specKey)) continue;
+                            singleSpecsSeen.add(specKey);
+                            useCode = groupName;
+                        } else {
+                            if (hasPen) {
+                                formattedSpec = (isPencilPen ? spec.replace('+铅笔芯', '') : spec.replace('+笔芯', '')) + (isPencilPen ? '+1盒铅芯（约20支）' : '+10支笔芯');
+                            } else {
+                                formattedSpec = spec;
+                            }
+                            useCode = code;
+                        }
+                        
+                        allSpecs.push({ spec, formattedSpec, cost: Math.round(cost * 100) / 100, code: useCode, isSingle, hasPen });
+                    }
+                    
+                    allSpecs.sort((a, b) => {
+                        const order = ['1套4支装', '1套6支装', '2套8支装', '2套12支装'];
+                        const getOrder = s => { for (let i = 0; i < order.length; i++) if (s.includes(order[i])) return i; return 8; };
+                        if (!a.isSingle && !b.isSingle) return getOrder(a.spec) - getOrder(b.spec);
+                        return a.isSingle ? 1 : -1;
+                    });
+                    
+                    if (allSpecs.length === 0) continue;
+                    
+                    const minCost = Math.min(...allSpecs.map(s => s.cost));
+                    const maxCost = Math.max(...allSpecs.map(s => s.cost));
+                    
+                    allSpecs.forEach(item => {
+                        skuaiContent.push(`填写商品规格：${item.formattedSpec}    的价格为：${item.cost}的商家编码为：${item.code}`);
+                    });
+                    
+                    outputData.push({
+                        '商品标题': groupName,
+                        '商家编码': groupName,
+                        '主图搜索词': groupName,
+                        'SKUAI填写词': skuaiContent.join('\n'),
+                        '一口价': minCost,
+                        '颜色名称修饰词': ''
+                    });
+                }
+                
+                updateProgress(95);
+                addLog('💾 生成文件...');
+                
+                const outputWorkbook = XLSX.utils.book_new();
+                const outputSheet = XLSX.utils.json_to_sheet(outputData);
+                XLSX.utils.book_append_sheet(outputWorkbook, outputSheet, 'Sheet1');
+                excelOutputXlsx = outputWorkbook;
+                
+                updateProgress(100);
+                addLog('✅ 完成！');
+                
+                // 生成格式: 上传表格20260413173339
+                const now = new Date();
+                const timestamp = now.getFullYear() +
+                    String(now.getMonth() + 1).padStart(2, '0') +
+                    String(now.getDate()).padStart(2, '0') +
+                    String(now.getHours()).padStart(2, '0') +
+                    String(now.getMinutes()).padStart(2, '0') +
+                    String(now.getSeconds()).padStart(2, '0');
+                XLSX.writeFile(excelOutputXlsx, '上传表格' + timestamp + '.xlsx');
+                
+                showExcelResult(true, `转换成功！\n共处理 ${totalGroups} 个商品组`, '上传表格' + timestamp + '.xlsx');
+                
+            } catch (error) {
+                addLog(`❌ 错误：${error.message}`);
+                showExcelResult(false, error.message, '');
+            }
+        }
+        
+        function showExcelResult(success, message, fileName) {
+            showExcelPage('page4');
+            const icon = document.getElementById('resultIcon');
+            const title = document.getElementById('resultTitle');
+            const msg = document.getElementById('resultMessage');
+            const file = document.getElementById('resultFile');
+            
+            if (success) {
+                icon.textContent = '✅';
+                title.textContent = '转换成功！';
+                title.className = 'text-xl font-bold text-green-600 mb-2';
+                file.style.display = 'block';
+                file.textContent = '📄 ' + fileName;
+            } else {
+                icon.textContent = '❌';
+                title.textContent = '转换失败';
+                title.className = 'text-xl font-bold text-red-600 mb-2';
+                file.style.display = 'none';
+            }
+            msg.textContent = message;
+        }
+        
+        function resetExcelConvert() {
+            excelSelectedFile = null;
+            dropZone.classList.remove('border-green-500', 'bg-green-50');
+            dropZone.classList.add('border-primary/40', 'bg-primary/5');
+            document.getElementById('dropIcon').textContent = '📂';
+            document.getElementById('dropText').textContent = '拖拽 Excel 文件到此处';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('fileName').classList.add('hidden');
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('includeSinglePack').checked = false;
+            document.getElementById('fileInput').value = '';
+            showExcelPage('page1');
+        }
+        
+        // =============================================
+        // 成本项处理工具
+        // =============================================
+        function initCostProcessing() {
+            const uploadZone = document.getElementById('costUploadZone');
+            const fileInput = document.getElementById('costFileInput');
+            const startBtn = document.getElementById('costStartBtn');
+            const removeBtn = document.getElementById('costRemoveBtn');
+            const downloadBtn = document.getElementById('costDownloadBtn');
+            const resetBtn = document.getElementById('costResetBtn');
+
+            if (uploadZone) {
+                uploadZone.classList.add('drop-zone');
+                uploadZone.addEventListener('click', () => fileInput?.click());
+                uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+                uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('drag-over'); });
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.remove('drag-over');
+                    if (e.dataTransfer.files[0]) handleCostFile(e.dataTransfer.files[0]);
+                });
+            }
+            
+            if (fileInput) {
+                fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleCostFile(e.target.files[0]); });
+            }
+            
+            if (removeBtn) removeBtn.addEventListener('click', resetCostProcessing);
+            if (startBtn) startBtn.addEventListener('click', startCostProcessing);
+            if (downloadBtn) downloadBtn.addEventListener('click', downloadCostResult);
+            if (resetBtn) resetBtn.addEventListener('click', resetCostProcessing);
+
+            const templateCharsInput = document.getElementById('titleNewTemplateChars');
+            if (templateCharsInput) {
+                templateCharsInput.addEventListener('input', function() {
+                    const chars = parseInt(this.value) || 0;
+                    const hanziCount = document.getElementById('titleHanziCount');
+                    if (hanziCount) hanziCount.textContent = Math.floor(chars / 2);
+                });
+            }
+        }
+
+        function handleCostFile(file) {
+            const uploadZone = document.getElementById('costUploadZone');
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showToast('错误', '请选择Excel文件', 'error');
+                return;
+            }
+            costSelectedFileData = file;
+            uploadZone.classList.remove('border-primary/40', 'bg-primary/5');
+            uploadZone.classList.add('border-green-500', 'bg-green-50');
+            uploadZone.querySelector('.text-5xl').textContent = '✅';
+            uploadZone.querySelector('.text-text-main').textContent = '文件已选择';
+            document.getElementById('costFileName').textContent = file.name;
+            document.getElementById('costFileSize').textContent = formatSize(file.size);
+            document.getElementById('costSelectedFile').classList.remove('hidden');
+            document.getElementById('costStartBtn').disabled = false;
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        async function startCostProcessing() {
+            if (!costSelectedFileData) {
+                showToast('错误', '请先选择文件', 'error');
+                return;
+            }
+
+            const startTime = Date.now();
+            costResultData = null;
+            const outputFileName = document.getElementById('costOutputFileName').value.trim() || '成本项更新';
+
+            // 隐藏完成卡片，显示处理卡片
+            const processingCard = document.getElementById('costProcessingCard');
+            const completeCard = document.getElementById('costCompleteCard');
+            processingCard.classList.remove('hidden');
+            completeCard.classList.add('hidden');
+            const startBtn = document.getElementById('costStartBtn');
+            setButtonLoading(startBtn, true, '处理中...');
+
+            // 清空步骤
+            const stepsDiv = document.getElementById('costSteps');
+            stepsDiv.innerHTML = '';
+
+            try {
+                // 添加超时保护
+                const readPromise = costSelectedFileData.arrayBuffer();
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('文件读取超时，请尝试更小的文件')), 60000);
+                });
+                const arrayBuffer = await Promise.race([readPromise, timeoutPromise]);
+                
+                const workbook = XLSX.read(arrayBuffer, { type: 'array', sheetRows: 20000 });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                document.getElementById('costOriginalRows').textContent = data.length;
+                document.getElementById('costOriginalCols').textContent = data[0]?.length || 0;
+                
+                await sleep(100);
+
+                const headerRow = data[1];
+                const dataRows = data.slice(2);
+                let currentData = [...dataRows];
+
+                // 步骤1: 删除退款订单
+                await updateCostStep('Step1', '删除退款订单', '是否退款为"是"的订单');
+                let deleted = currentData.filter(row => isRefund(row, headerRow)).length;
+                currentData = currentData.filter(row => !isRefund(row, headerRow));
+                document.getElementById('costStep1Result').innerHTML = `✅ 删除了 <strong>${deleted}</strong> 个退款订单，剩余：<strong>${currentData.length}</strong> 行`;
+                updateCostProgress(15);
+                await sleep(100);
+
+                // 步骤2: 删除非单个宝贝订单
+                await updateCostStep('Step2', '删除非单个宝贝订单', '子订单宝贝数量 > 1的订单');
+                deleted = currentData.filter(row => isMultiItem(row, headerRow)).length;
+                currentData = currentData.filter(row => !isMultiItem(row, headerRow));
+                document.getElementById('costStep2Result').innerHTML = `✅ 删除了 <strong>${deleted}</strong> 个非单个宝贝订单，剩余：<strong>${currentData.length}</strong> 行`;
+                updateCostProgress(30);
+                await sleep(100);
+
+                // 步骤3: 删除包含(合)的行
+                await updateCostStep('Step3', '删除包含(合)的利润行', '利润列包含"(合)"的行');
+                deleted = currentData.filter(row => containsHe(row, headerRow)).length;
+                currentData = currentData.filter(row => !containsHe(row, headerRow));
+                document.getElementById('costStep3Result').innerHTML = `✅ 删除了 <strong>${deleted}</strong> 个包含(合)的行，剩余：<strong>${currentData.length}</strong> 行`;
+                updateCostProgress(45);
+                await sleep(100);
+
+                // 步骤4: 转换运费
+                await updateCostStep('Step4', '处理运费列', '转换采购单运费和卖出单运费为数字类型');
+                const purchaseFreightIdx = headerRow.indexOf('采购单运费');
+                const sellFreightIdx = headerRow.indexOf('卖出单运费');
+                if (purchaseFreightIdx >= 0 || sellFreightIdx >= 0) {
+                    currentData = currentData.map(row => {
+                        if (purchaseFreightIdx >= 0) row[purchaseFreightIdx] = parseFloat(row[purchaseFreightIdx]) || 0;
+                        if (sellFreightIdx >= 0) row[sellFreightIdx] = parseFloat(row[sellFreightIdx]) || 0;
+                        return row;
+                    });
+                }
+                document.getElementById('costStep4Result').innerHTML = `✅ 已转换运费为数字类型`;
+                updateCostProgress(55);
+                await sleep(100);
+
+                // 步骤5: 删除高运费
+                await updateCostStep('Step5', '删除高运费订单', '采购单运费 ≥ 8的订单');
+                if (purchaseFreightIdx >= 0) {
+                    deleted = currentData.filter(row => row[purchaseFreightIdx] >= 8).length;
+                    currentData = currentData.filter(row => row[purchaseFreightIdx] < 8);
+                }
+                document.getElementById('costStep5Result').innerHTML = `✅ 删除了 <strong>${deleted || 0}</strong> 个高运费订单，剩余：<strong>${currentData.length}</strong> 行`;
+                updateCostProgress(70);
+                await sleep(100);
+
+                // 步骤6: 过滤比值
+                await updateCostStep('Step6', '计算并过滤比值', '(实收款-采购金额)/利润 ≠ 1的行');
+                const actualIdx = headerRow.indexOf('实收款（已采购）');
+                const purchaseIdx = headerRow.indexOf('采购金额(含运费)');
+                const profitIdx = headerRow.indexOf('利润');
+
+                if (actualIdx >= 0 && purchaseIdx >= 0 && profitIdx >= 0) {
+                    const beforeCount = currentData.length;
+                    currentData = currentData.filter(row => {
+                        const actual = parseFloat(row[actualIdx]) || 0;
+                        const purchase = parseFloat(row[purchaseIdx]) || 0;
+                        const profit = parseFloat(row[profitIdx]) || 0;
+                        if (profit === 0) return false;
+                        const ratio = (actual - purchase) / profit;
+                        return Math.abs(ratio - 1) < 0.001;
+                    });
+                    deleted = beforeCount - currentData.length;
+                }
+                document.getElementById('costStep6Result').innerHTML = `✅ 删除了 <strong>${deleted || 0}</strong> 个比值不等于1的行，剩余：<strong>${currentData.length}</strong> 行`;
+                updateCostProgress(85);
+                await sleep(100);
+                
+                // 透视表
+                await updateCostStep('Pivot', '创建透视表', '按SKUID和本店宝贝分组');
+                const skuidIdx = headerRow.indexOf('SKUID');
+                const benDianIdx = headerRow.indexOf('本店宝贝');
+                const purchaseIdxForGroup = headerRow.indexOf('采购金额(含运费)');
+
+                const groupMap = {};
+                currentData.forEach(row => {
+                    const skuidVal = skuidIdx >= 0 ? row[skuidIdx] : '';
+                    const benDianVal = benDianIdx >= 0 ? row[benDianIdx] : '';
+                    const purchaseVal = purchaseIdxForGroup >= 0 ? parseFloat(row[purchaseIdxForGroup]) || 0 : 0;
+                    const key = `${skuidVal}_${benDianVal}`;
+                    if (!groupMap[key]) groupMap[key] = { skuid: skuidVal, benDian: benDianVal, sum: 0, count: 0 };
+                    groupMap[key].sum += purchaseVal;
+                    groupMap[key].count++;
+                });
+                
+                costResultData = Object.values(groupMap).map(item => ({
+                    '商品ID': item.benDian,
+                    'SKUID': item.skuid,
+                    '货品成本': item.count > 0 ? (item.sum / item.count).toFixed(2) : 0
+                }));
+                
+                document.getElementById('costPivotResult').innerHTML = `✅ 透视表生成成功，行数：<strong>${costResultData.length}</strong>`;
+                updateCostProgress(100);
+                
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('costProcessTime').textContent = elapsed;
+                document.getElementById('costFinalRowCount').textContent = costResultData.length;
+                document.getElementById('costExportFileName').textContent = outputFileName + '.xlsx';
+
+                document.getElementById('costProcessingCard').classList.add('hidden');
+                document.getElementById('costCompleteCard').classList.remove('hidden');
+                setButtonLoading(startBtn, false);
+
+                showToast('成功', `处理完成！共生成 ${costResultData.length} 条记录`);
+
+            } catch (error) {
+                showToast('错误', error.message, 'error');
+                setButtonLoading(startBtn, false);
+            }
+        }
+        
+        async function updateCostStep(name, title, desc) {
+            const container = document.getElementById('costSteps');
+            container.innerHTML += `
+                <div id="cost${name}Step" class="bg-blue-50 rounded-xl p-4 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                            <i class="fa fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-text-main">${title}</div>
+                            <div class="text-sm text-text-muted">${desc}</div>
+                        </div>
+                    </div>
+                    <div id="cost${name}Result" class="mt-2 text-sm text-green-600"></div>
+                </div>
+            `;
+            await sleep(100);
+        }
+        
+        function updateCostProgress(v) {
+            document.getElementById('costProgressBar').style.width = v + '%';
+            document.getElementById('costProgressText').textContent = v + '%';
+        }
+        
+        function isRefund(row, header) {
+            const idx = header.indexOf('是否退款');
+            return idx >= 0 && row[idx] === '是';
+        }
+        
+        function isMultiItem(row, header) {
+            const idx = header.indexOf('子订单宝贝数量');
+            if (idx < 0) return false;
+            return (parseInt(row[idx]) || 0) > 1;
+        }
+        
+        function containsHe(row, header) {
+            const idx = header.indexOf('利润');
+            return idx >= 0 && row[idx] && String(row[idx]).includes('(合)');
+        }
+        
+        function downloadCostResult() {
+            if (!costResultData || costResultData.length === 0) {
+                showToast('错误', '没有可下载的数据', 'error');
+                return;
+            }
+            const outputFileName = document.getElementById('costOutputFileName').value.trim() || '成本项更新';
+            const ws = XLSX.utils.json_to_sheet(costResultData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '透视表');
+            XLSX.writeFile(wb, outputFileName + '.xlsx');
+        }
+        
+        function resetCostProcessing() {
+            costSelectedFileData = null;
+            costResultData = null;
+            
+            const uploadZone = document.getElementById('costUploadZone');
+            const selectedFileDiv = document.getElementById('costSelectedFile');
+            const startBtn = document.getElementById('costStartBtn');
+            const stepsDiv = document.getElementById('costSteps');
+            
+            if (uploadZone) {
+                uploadZone.classList.remove('border-green-500', 'bg-green-50');
+                uploadZone.classList.add('border-primary/40', 'bg-primary/5');
+                const iconEl = uploadZone.querySelector('.text-5xl');
+                const textEl = uploadZone.querySelector('.text-text-main');
+                if (iconEl) iconEl.textContent = '📂';
+                if (textEl) textEl.textContent = '拖拽 Excel 文件到此处';
+            }
+            
+            const fileInput = document.getElementById('costFileInput');
+            if (fileInput) fileInput.value = '';
+            if (selectedFileDiv) selectedFileDiv.classList.add('hidden');
+            if (startBtn) startBtn.disabled = true;
+            
+            const processingCard = document.getElementById('costProcessingCard');
+            const completeCard = document.getElementById('costCompleteCard');
+            if (processingCard) processingCard.classList.add('hidden');
+            if (completeCard) completeCard.classList.add('hidden');
+            
+            if (stepsDiv) stepsDiv.innerHTML = '';
+            updateCostProgress(0);
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // =============================================
+        // 二维码生成工具
+        // =============================================
+        function initQrGenerator() {
+            const excelUpload = document.getElementById('qrExcelUpload');
+            const dropArea = document.getElementById('qrDropArea');
+            const generateBtn = document.getElementById('qrGenerateBtn');
+            const clearBtn = document.getElementById('qrClearBtn');
+            const disableSwitch = document.getElementById('qrDisableRedPacket');
+            const selectAllBtn = document.getElementById('qrSelectAllBtn');
+            const batchDeleteBtn = document.getElementById('qrBatchDeleteBtn');
+            const downloadAllBtn = document.getElementById('qrDownloadAllBtn');
+
+            if (excelUpload) {
+                excelUpload.addEventListener('change', (e) => { if (e.target.files[0]) handleQrFile(e.target.files[0]); });
+            }
+
+            if (dropArea) {
+                dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.classList.add('border-primary', 'bg-primary-light/20'); });
+                dropArea.addEventListener('dragleave', () => { dropArea.classList.remove('border-primary', 'bg-primary-light/20'); });
+                dropArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropArea.classList.remove('border-primary', 'bg-primary-light/20');
+                    if (e.dataTransfer.files[0]) handleQrFile(e.dataTransfer.files[0]);
+                });
+            }
+
+            if (disableSwitch) {
+                disableSwitch.addEventListener('click', () => {
+                    qrDisableRedPacket = !qrDisableRedPacket;
+                    const toggle = disableSwitch.querySelector('.switch-toggle');
+                    if (qrDisableRedPacket) {
+                        toggle?.classList.add('active');
+                        disableSwitch.classList.remove('bg-text-muted');
+                        disableSwitch.classList.add('bg-primary');
+                    } else {
+                        toggle?.classList.remove('active');
+                        disableSwitch.classList.add('bg-text-muted');
+                        disableSwitch.classList.remove('bg-primary');
+                    }
+                });
+            }
+
+            if (generateBtn) generateBtn.addEventListener('click', generateQrCodes);
+            if (clearBtn) clearBtn.addEventListener('click', clearQrAll);
+            if (selectAllBtn) selectAllBtn.addEventListener('click', qrSelectAll);
+            if (batchDeleteBtn) batchDeleteBtn.addEventListener('click', qrBatchDelete);
+            if (downloadAllBtn) downloadAllBtn.addEventListener('click', qrBatchDownload);
+        }
+        
+        function handleQrFile(file) {
+            showLoading('导入中...');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    processQrData(jsonData);
+                    showToast('成功', `导入 ${qrSkuData.length} 个商品`);
+                } catch (error) {
+                    showToast('错误', error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function processQrData(data) {
+            const grouped = {};
+            
+            // 检测是否是合并单元格的表头（第一列键名包含"数据时间区间"）
+            const hasMergedHeader = data.length > 0 && 
+                Object.keys(data[0])[0] && 
+                Object.keys(data[0])[0].includes('数据时间区间');
+            
+            // 确定数据起始行（跳过表头）
+            const startRow = hasMergedHeader ? 1 : 0;
+            
+            // 提取列名映射（处理合并单元格的情况）- 动态获取数据时间区间键名
+            let colMap = null;
+            if (hasMergedHeader && data.length > 0) {
+                const firstRow = data[0];
+                const dateKey = Object.keys(firstRow)[0]; // 获取实际的数据时间区间键名
+                colMap = {
+                    '商品ID': dateKey,
+                    '标题': '__EMPTY',
+                    '商家编码': '__EMPTY_1',
+                    'SKUID': '__EMPTY_2',
+                    'SKU商家编码': '__EMPTY_3',
+                    'SKU库存': '__EMPTY_4',
+                    'SKU价格': '__EMPTY_5',
+                    '颜色尺码': '__EMPTY_6',
+                    '颜色图': '__EMPTY_7'
+                };
+            }
+            
+            for (let i = startRow; i < data.length; i++) {
+                const row = data[i];
+                let itemId;
+                
+                if (hasMergedHeader && colMap) {
+                    // 使用映射的列名获取数据
+                    itemId = String(row[colMap['商品ID']] || '').trim();
+                } else {
+                    itemId = String(row['商品ID'] || row['宝贝ID'] || row['ID'] || '').trim();
+                }
+                
+                if (!itemId || itemId.includes('数据时间区间') || itemId.includes('至')) continue;
+                
+                // 跳过没有任何有效数据的行
+                const hasValidData = hasMergedHeader && colMap 
+                    ? (row[colMap['SKUID']] || row[colMap['SKU商家编码']] || row[colMap['商品ID']])
+                    : (row['SKUID'] || row['商家编码_SKUID'] || row['SKU商家编码'] || row['商品ID'] || row['宝贝ID']);
+                if (!hasValidData) continue;
+                
+                let title, skuId, skuCode, stock, price, colorSize, colorImg;
+                
+                if (hasMergedHeader && colMap) {
+                    title = String(row[colMap['标题']] || '').trim();
+                    skuId = String(row[colMap['SKUID']] || '').trim();
+                    skuCode = String(row[colMap['SKU商家编码']] || '').trim();
+                    stock = parseInt(row[colMap['SKU库存']]) || 0;
+                    price = parseFloat(row[colMap['SKU价格']]) || 0;
+                    colorSize = String(row[colMap['颜色尺码']] || '').trim();
+                    colorImg = String(row[colMap['颜色图']] || '').trim();
+                } else {
+                    title = String(row['标题'] || '').trim();
+                    skuId = String(row['SKUID'] || row['商家编码_SKUID'] || '').trim();
+                    skuCode = String(row['SKU商家编码'] || '').trim();
+                    stock = parseInt(row['SKU库存']) || 0;
+                    price = parseFloat(row['SKU价格']) || 0;
+                    colorSize = String(row['颜色尺码'] || '').trim();
+                    colorImg = String(row['颜色图'] || '').trim();
+                }
+                
+                if (!grouped[itemId]) {
+                    grouped[itemId] = { '宝贝ID': itemId, '标题': title, 'SKU列表': [], '主图': colorImg };
+                }
+                grouped[itemId]['SKU列表'].push({
+                    '商家编码_SKUID': skuId,
+                    'SKU商家编码': skuCode,
+                    'SKU价格': price,
+                    'SKU库存': stock,
+                    '颜色尺码': colorSize,
+                    '颜色图': colorImg
+                });
+            }
+            
+            // 每个商品默认选最低价格的SKU（有库存的）
+            qrSkuData = Object.values(grouped).map(item => {
+                const validSkus = item['SKU列表'].filter(s => s['SKU库存'] > 0);
+                if (validSkus.length > 0) {
+                    const lowestPriceSku = validSkus.reduce((min, s) => s['SKU价格'] < min['SKU价格'] ? s : min, validSkus[0]);
+                    item['默认SKU索引'] = item['SKU列表'].indexOf(lowestPriceSku);
+                } else {
+                    item['默认SKU索引'] = 0;
+                }
+                return item;
+            });
+            
+            refreshQrGoods();
+        }
+        
+        function refreshQrGoods() {
+            const empty = document.getElementById('qrEmptyState');
+            const container = document.getElementById('qrGoodsContainer');
+            const bottom = document.getElementById('qrBottomActions');
+
+            if (qrSkuData.length === 0) {
+                empty.classList.remove('hidden');
+                container.classList.add('hidden');
+                bottom.classList.add('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            container.classList.remove('hidden');
+            bottom.classList.remove('hidden');
+            container.innerHTML = '';
+
+            qrSkuData.forEach((item, idx) => {
+                const defaultSkuIdx = item['默认SKU索引'] || 0;
+                const currentSku = item['SKU列表'][defaultSkuIdx] || item['SKU列表'][0];
+                
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors';
+                card.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <div class="qr-checkbox w-10 h-10 border-2 border-border rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0 mt-1" data-idx="${idx}">
+                            <i class="fa fa-check text-white hidden"></i>
+                        </div>
+                        ${currentSku && currentSku['颜色图'] ? `<img src="${currentSku['颜色图']}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0" onerror="this.style.display='none'">` : `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fa fa-image text-gray-400"></i></div>`}
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-text-main">商品ID: ${item['宝贝ID']}</div>
+                            <div class="text-sm text-text-muted truncate mb-2">${item['标题'] || '无标题'}</div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <select class="qr-sku-select border border-border rounded-lg px-3 py-2 text-sm max-w-xs" data-idx="${idx}" onchange="updateQrSkuDisplay(${idx}, this.value)">
+                                    ${item['SKU列表'].map((sku, i) => {
+                                        const disabled = sku['SKU库存'] <= 0;
+                                        const price = typeof sku['SKU价格'] === 'number' ? sku['SKU价格'].toFixed(2) : sku['SKU价格'];
+                                        const stockLabel = disabled ? '(缺货)' : `(库存${sku['SKU库存']})`;
+                                        return `<option value="${i}" ${disabled ? 'disabled' : ''} ${i === defaultSkuIdx ? 'selected' : ''} class="${disabled ? 'text-red-400 line-through' : ''}">${sku['颜色尺码'] || '默认'} ¥${price} ${stockLabel}</option>`;
+                                    }).join('')}
+                                </select>
+                                <input type="number" class="qr-qty w-16 border border-border rounded-lg px-2 py-2 text-sm text-center" data-idx="${idx}" min="1" value="1">
+                            </div>
+                            <div class="text-sm mt-2 ${currentSku['SKU库存'] <= 0 ? 'text-red-500 font-medium' : 'text-green-600'}">
+                                ${currentSku ? (currentSku['SKU库存'] > 0 ? `✅ 库存: ${currentSku['SKU库存']}` : '❌ 无货') : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteQrRow(${idx})" class="bg-danger text-white px-3 py-2 rounded-lg text-sm hover:bg-red-600 transition-colors flex-shrink-0">删除</button>
+                    </div>
+                `;
+
+                card.querySelector('.qr-checkbox').addEventListener('click', (e) => toggleQrCheckbox(idx, e.currentTarget));
+                container.appendChild(card);
+            });
+
+            qrSelectedItems = [];
+            document.getElementById('qrSelectedCount').textContent = '0';
+        }
+        
+        function updateQrSkuDisplay(idx, skuIdx) {
+            const item = qrSkuData[idx];
+            const sku = item['SKU列表'][parseInt(skuIdx)];
+            const card = document.querySelector(`[data-idx="${idx}"]`).closest('.bg-gray-50');
+            
+            // 更新图片
+            const imgContainer = card.querySelector('img') || card.querySelector('.w-16.h-16');
+            if (sku && sku['颜色图']) {
+                const img = card.querySelector('img');
+                if (img) {
+                    img.src = sku['颜色图'];
+                    img.style.display = 'block';
+                } else {
+                    const placeholder = card.querySelector('.bg-gray-200');
+                    if (placeholder) {
+                        placeholder.innerHTML = `<img src="${sku['颜色图']}" class="w-16 h-16 object-cover rounded-lg">`;
+                    }
+                }
+            }
+            
+            // 更新库存显示
+            const stockDiv = card.querySelector('.text-sm.mt-2');
+            if (stockDiv && sku) {
+                if (sku['SKU库存'] <= 0) {
+                    stockDiv.className = 'text-sm mt-2 text-red-500 font-medium';
+                    stockDiv.textContent = '❌ 无货';
+                } else {
+                    stockDiv.className = 'text-sm mt-2 text-green-600';
+                    stockDiv.textContent = `✅ 库存: ${sku['SKU库存']}`;
+                }
+            }
+        }
+        
+        function toggleQrCheckbox(idx, checkbox) {
+            const icon = checkbox.querySelector('i');
+            const isChecked = !icon.classList.contains('hidden');
+            
+            if (isChecked) {
+                icon.classList.add('hidden');
+                checkbox.classList.remove('bg-primary', 'border-primary');
+                checkbox.classList.add('border-border');
+                qrSelectedItems = qrSelectedItems.filter(i => i !== idx);
+            } else {
+                icon.classList.remove('hidden');
+                checkbox.classList.add('bg-primary', 'border-primary');
+                checkbox.classList.remove('border-border');
+                qrSelectedItems.push(idx);
+            }
+            
+            document.getElementById('qrSelectedCount').textContent = qrSelectedItems.length;
+        }
+        
+        function deleteQrRow(idx) {
+            qrSkuData.splice(idx, 1);
+            qrSelectedItems = qrSelectedItems.filter(i => i < idx || i > idx).map(i => i > idx ? i - 1 : i);
+            refreshQrGoods();
+            showToast('成功', '已删除');
+        }
+        
+        function qrSelectAll() {
+            const checkboxes = document.querySelectorAll('.qr-checkbox');
+            checkboxes.forEach((cb, idx) => {
+                const icon = cb.querySelector('i');
+                icon.classList.remove('hidden');
+                cb.classList.add('bg-primary', 'border-primary');
+                cb.classList.remove('border-border');
+                if (!qrSelectedItems.includes(idx)) qrSelectedItems.push(idx);
+            });
+            document.getElementById('qrSelectedCount').textContent = qrSelectedItems.length;
+        }
+        
+        function qrBatchDelete() {
+            if (qrSelectedItems.length === 0) {
+                showToast('提示', '请先选择', 'warning');
+                return;
+            }
+            qrSelectedItems.sort((a, b) => b - a).forEach(idx => qrSkuData.splice(idx, 1));
+            qrSelectedItems = [];
+            refreshQrGoods();
+            showToast('成功', '已删除');
+        }
+        
+        function generateQrCodes() {
+            if (qrSkuData.length === 0) {
+                showToast('提示', '没有可生成的商品', 'warning');
+                return;
+            }
+            
+            showLoading('生成中...');
+            
+            setTimeout(() => {
+                try {
+                    const dragN = parseInt(document.getElementById('qrDragN').value) || 1;
+                    const baseUrl = qrDisableRedPacket ? 'https://main.m.taobao.com/order/index.html' : 'https://h5.m.taobao.com/cart/order.html';
+                    
+                    const groups = [];
+                    for (let i = 0; i < qrSkuData.length; i += dragN) {
+                        groups.push(qrSkuData.slice(i, i + dragN));
+                    }
+                    
+                    const previewEmpty = document.getElementById('qrPreviewEmpty');
+                    const previewContainer = document.getElementById('qrPreviewContainer');
+                    const previewActions = document.getElementById('qrPreviewActions');
+                    
+                    previewEmpty.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                    previewActions.classList.remove('hidden');
+                    previewContainer.innerHTML = '';
+                    
+                    qrGeneratedQrs = [];
+                    
+                    groups.forEach((group, gIdx) => {
+                        const params = group.map(item => {
+                            const skuSelect = document.querySelector(`.qr-sku-select[data-idx="${qrSkuData.indexOf(item)}"]`);
+                            const qtyInput = document.querySelector(`.qr-qty[data-idx="${qrSkuData.indexOf(item)}"]`);
+                            const skuIdx = parseInt(skuSelect?.value) || 0;
+                            const sku = item['SKU列表'][skuIdx];
+                            const qty = parseInt(qtyInput?.value) || 1;
+                            // 优先使用商家编码_SKUID（真正的SKU ID）
+                            const code = sku['商家编码_SKUID'] || sku['SKU商家编码'] || '';
+                            return `${item['宝贝ID']}_${qty}_${code}`;
+                        }).join('%2C');
+
+                        const url = `${baseUrl}?buyNow=false&buyParam=${params}`;
+                        
+                        // 获取组内选中的SKU信息用于显示
+                        const groupSkus = group.map(item => {
+                            const skuSelect = document.querySelector(`.qr-sku-select[data-idx="${qrSkuData.indexOf(item)}"]`);
+                            const qtyInput = document.querySelector(`.qr-qty[data-idx="${qrSkuData.indexOf(item)}"]`);
+                            const skuIdx = parseInt(skuSelect?.value) || 0;
+                            const sku = item['SKU列表'][skuIdx];
+                            const qty = parseInt(qtyInput?.value) || 1;
+                            return { sku, qty, title: item['标题'] };
+                        });
+                        
+                        const totalPrice = groupSkus.reduce((sum, g) => sum + (g.sku?.['SKU价格'] || 0) * g.qty, 0);
+                        const firstSku = groupSkus[0]?.sku;
+                        
+                        const card = document.createElement('div');
+                        card.className = 'bg-white rounded-xl p-4 text-center shadow-sm border border-gray-100';
+                        card.id = `qr-card-${gIdx + 1}`;
+                        card.innerHTML = `
+                            <div class="text-xs text-gray-400 mb-2">${gIdx + 1} / ${groups.length}</div>
+                            ${firstSku && firstSku['颜色图'] ? `<img src="${firstSku['颜色图']}" class="w-16 h-16 object-cover rounded-lg mx-auto mb-2" onerror="this.style.display='none'">` : ''}
+                            <div class="text-xs text-gray-500 truncate max-w-[180px] mx-auto mb-1">${firstSku ? firstSku['颜色尺码'] || '默认' : ''}</div>
+                            <canvas id="qr-canvas-${gIdx + 1}" class="mx-auto"></canvas>
+                            <div class="mt-3 space-y-1">
+                                <div class="text-sm font-medium text-gray-800">¥${totalPrice.toFixed(2)}</div>
+                                <div class="text-xs text-gray-400">共${groupSkus.reduce((sum, g) => sum + g.qty, 0)}件</div>
+                            </div>
+                            <div class="mt-2 flex gap-1">
+                                <button onclick="copyQrLink('${url}')" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-2 py-1.5 rounded-lg text-xs transition-colors">
+                                    <i class="fa fa-link mr-1"></i>链接
+                                </button>
+                                <button onclick="downloadSingleQr(${gIdx + 1})" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 px-2 py-1.5 rounded-lg text-xs transition-colors">
+                                    <i class="fa fa-download mr-1"></i>下载
+                                </button>
+                            </div>
+                        `;
+                        
+                        previewContainer.appendChild(card);
+                        
+                        QRCode.toCanvas(document.getElementById(`qr-canvas-${gIdx + 1}`), url, { width: 180, margin: 2 });
+                        
+                        qrGeneratedQrs.push({ url, price: totalPrice.toFixed(2), index: gIdx + 1 });
+                    });
+                    
+                    document.getElementById('qrDownloadAllBtn').disabled = false;
+                    document.getElementById('qrCopyImageBtn').disabled = false;
+                    showToast('成功', `生成 ${groups.length} 个二维码`);
+                } catch (error) {
+                    showToast('错误', error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
+            }, 100);
+        }
+        
+        function copyQrLink(url) {
+            navigator.clipboard.writeText(url).then(() => showToast('成功', '链接已复制'));
+        }
+        
+        function downloadSingleQr(idx) {
+            const canvas = document.getElementById(`qr-canvas-${idx}`);
+            if (!canvas) return;
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `二维码${idx}.png`;
+            link.click();
+            showToast('成功', '二维码已下载');
+        }
+        
+        function qrBatchDownload() {
+            if (qrGeneratedQrs.length === 0) return;
+            qrGeneratedQrs.forEach(qr => downloadSingleQr(qr.index));
+        }
+        
+        async function copyQrCardsAsImage() {
+            const container = document.getElementById('qrPreviewContainer');
+            if (!container || qrGeneratedQrs.length === 0) return;
+
+            showLoading('生成图片中...');
+            try {
+                // 创建临时横向布局容器
+                const tempContainer = document.createElement('div');
+                tempContainer.style.cssText = 'display: flex; flex-direction: row; flex-wrap: wrap; gap: 16px; padding: 20px; background: #f9fafb; width: fit-content;';
+
+                // 克隆所有二维码卡片到临时容器，并重新生成二维码
+                const cards = container.querySelectorAll('[id^="qr-card-"]');
+                for (let i = 0; i < cards.length; i++) {
+                    const card = cards[i];
+                    const clone = card.cloneNode(true);
+                    clone.style.cssText = 'background: white; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);';
+
+                    // 找到原canvas并获取URL重新生成
+                    const oldCanvas = card.querySelector('canvas');
+                    const newCanvas = clone.querySelector('canvas');
+                    if (oldCanvas && newCanvas && qrGeneratedQrs[i]) {
+                        // 使用保存的URL重新生成二维码
+                        await new Promise(resolve => {
+                            QRCode.toCanvas(newCanvas, qrGeneratedQrs[i].url, { width: 180, margin: 2 }, resolve);
+                        });
+                    }
+
+                    tempContainer.appendChild(clone);
+                }
+
+                document.body.appendChild(tempContainer);
+
+                // 使用html2canvas将横向容器转为图片
+                const canvas = await html2canvas(tempContainer, {
+                    backgroundColor: '#f9fafb',
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
+                });
+
+                // 清理临时容器
+                document.body.removeChild(tempContainer);
+
+                canvas.toBlob(async (blob) => {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        showToast('成功', '图片已复制到剪贴板');
+                    } catch (err) {
+                        const link = document.createElement('a');
+                        link.href = canvas.toDataURL('image/png');
+                        link.download = `二维码_${Date.now()}.png`;
+                        link.click();
+                        showToast('成功', '图片已下载');
+                    }
+                }, 'image/png');
+            } catch (error) {
+                showToast('错误', '生成图片失败', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function clearQrAll() {
+            if (!confirm('确定清空？')) return;
+            qrSkuData = [];
+            qrSelectedItems = [];
+            qrGeneratedQrs = [];
+            
+            document.getElementById('qrEmptyState').classList.remove('hidden');
+            document.getElementById('qrGoodsContainer').classList.add('hidden');
+            document.getElementById('qrBottomActions').classList.add('hidden');
+            document.getElementById('qrPreviewEmpty').classList.remove('hidden');
+            document.getElementById('qrPreviewContainer').classList.add('hidden');
+            document.getElementById('qrPreviewActions').classList.add('hidden');
+            document.getElementById('qrDownloadAllBtn').disabled = true;
+            document.getElementById('qrCopyImageBtn').disabled = true;
+            
+            showToast('成功', '已清空');
+        }
+        
+        // =============================================
+        // 初始化
+        // =============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 默认显示Excel转换工具
+            switchTool('excel-convert');
+            // 初始化各模块
+            initCostProcessing();
+            initQrGenerator();
+        });
+    </script>
+</body>
+</html>
