@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -547,8 +548,7 @@
         
         // Excel转换工具变量
         let excelSelectedFile = null;
-        let excelOutputXlsx = null;
-        
+
         // 成本项处理变量
         let costResultData = null;
         let costSelectedFileData = null;
@@ -951,6 +951,7 @@
                     
                     const minCost = Math.min(...allSpecs.map(s => s.cost));
                     const maxCost = Math.max(...allSpecs.map(s => s.cost));
+                    const needRedFlag = minCost * 10 < maxCost;
                     
                     allSpecs.forEach(item => {
                         skuaiContent.push(`填写商品规格：${item.formattedSpec}    的价格为：${item.cost}的商家编码为：${item.code}`);
@@ -962,22 +963,101 @@
                         '主图搜索词': groupName,
                         'SKUAI填写词': skuaiContent.join('\n'),
                         '一口价': minCost,
-                        '颜色名称修饰词': ''
+                        '颜色名称修饰词': '',
+                        '_needRed': needRedFlag
                     });
                 }
                 
                 updateProgress(95);
                 addLog('💾 生成文件...');
-                
-                const outputWorkbook = XLSX.utils.book_new();
-                const outputSheet = XLSX.utils.json_to_sheet(outputData);
-                XLSX.utils.book_append_sheet(outputWorkbook, outputSheet, 'Sheet1');
-                excelOutputXlsx = outputWorkbook;
-                
-                updateProgress(100);
-                addLog('✅ 完成！');
-                
-                // 生成格式: 上传表格20260413173339
+
+                // 步骤1: 用 SheetJS 生成基础 xlsx（不含样式）
+                const headers = ['商品标题', '商家编码', '主图搜索词', 'SKUAI填写词', '一口价', '颜色名称修饰词'];
+                const sheetData = [headers];
+                outputData.forEach(row => {
+                    sheetData.push([
+                        row['商品标题'],
+                        row['商家编码'],
+                        row['主图搜索词'],
+                        row['SKUAI填写词'],
+                        row['一口价'],
+                        row['颜色名称修饰词']
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+                const wbArrayBuffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+
+                // 步骤2: 收集需要标红的行号（1-based，第1行是表头）
+                const redRowNums = [];
+                outputData.forEach((row, i) => {
+                    if (row._needRed) {
+                        redRowNums.push(i + 2);
+                        console.log('🔴 需标红: 行' + (i + 2) + ' | ' + row['商品标题'] + ' | 一口价=' + row['一口价']);
+                    }
+                });
+                console.log('📋 共 ' + redRowNums.length + ' 行需标红:', redRowNums);
+
+                // 步骤3: 用 JSZip 修改 xlsx 内部 XML，添加红色背景
+                async function styleXlsx(arrayBuffer, redRows) {
+                    const zip = await JSZip.loadAsync(arrayBuffer);
+
+                    let stylesXml = await zip.file('xl/styles.xml').async('string');
+                    console.log('🔍 原始 fills:\n' + stylesXml.match(/<fills[\s\S]*?<\/fills>/g));
+                    console.log('🔍 原始 cellXfs:\n' + stylesXml.match(/<cellXfs[\s\S]*?<\/cellXfs>/g));
+
+                    const fillMatch = stylesXml.match(/<fills count="(\d+)">/);
+                    const fillCount = parseInt(fillMatch[1]);
+                    stylesXml = stylesXml.replace(
+                        '</fills>',
+                        '<fill><patternFill patternType="solid"><fgColor rgb="FFFFCCCC"/><bgColor indexed="64"/></patternFill></fill></fills>'
+                    );
+                    stylesXml = stylesXml.replace(
+                        'fills count="' + fillCount + '"',
+                        'fills count="' + (fillCount + 1) + '"'
+                    );
+
+                    const xfMatch = stylesXml.match(/<cellXfs count="(\d+)">/);
+                    const xfCount = parseInt(xfMatch[1]);
+                    stylesXml = stylesXml.replace(
+                        '</cellXfs>',
+                        '<xf numFmtId="0" fontId="0" fillId="' + fillCount + '" borderId="0" xfId="0" applyFill="1"/></cellXfs>'
+                    );
+                    stylesXml = stylesXml.replace(
+                        'cellXfs count="' + xfCount + '"',
+                        'cellXfs count="' + (xfCount + 1) + '"'
+                    );
+
+                    zip.file('xl/styles.xml', stylesXml);
+                    console.log('📝 修改后的 fills:\n' + stylesXml.match(/<fills[\s\S]*?<\/fills>/g));
+                    console.log('📝 修改后的 cellXfs:\n' + stylesXml.match(/<cellXfs[\s\S]*?<\/cellXfs>/g));
+
+                    let sheetXml = await zip.file('xl/worksheets/sheet1.xml').async('string');
+                    const styleIdx = xfCount;
+
+                    redRows.forEach(rowNum => {
+                        const rowRegex = new RegExp('(<row r="' + rowNum + '"[^>]*>)(.*?)(</row>)', 's');
+                        const match = sheetXml.match(rowRegex);
+                        console.log('=== 行 ' + rowNum + ' 匹配结果:', match ? '✅ 找到' : '❌ 未找到');
+                        if (match) {
+                            console.log('  【替换前】:', match[0]);
+                            const taggedCells = match[2].replace(/<c /g, '<c s="' + styleIdx + '" ');
+                            const afterReplace = match[1] + taggedCells + match[3];
+                            console.log('  【替换后】:', afterReplace);
+                            sheetXml = sheetXml.replace(match[0], afterReplace);
+                        }
+                    });
+
+                    zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+                    return await zip.generateAsync({ type: 'arraybuffer' });
+                }
+
+                const styledBuffer = await styleXlsx(wbArrayBuffer, redRowNums);
+
+                // 步骤4: 下载
                 const now = new Date();
                 const timestamp = now.getFullYear() +
                     String(now.getMonth() + 1).padStart(2, '0') +
@@ -985,9 +1065,22 @@
                     String(now.getHours()).padStart(2, '0') +
                     String(now.getMinutes()).padStart(2, '0') +
                     String(now.getSeconds()).padStart(2, '0');
-                XLSX.writeFile(excelOutputXlsx, '上传表格' + timestamp + '.xlsx');
-                
-                showExcelResult(true, `转换成功！\n共处理 ${totalGroups} 个商品组`, '上传表格' + timestamp + '.xlsx');
+                const filename = '上传表格' + timestamp + '.xlsx';
+
+                const blob = new Blob([styledBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                updateProgress(100);
+                addLog('✅ 完成！');
+
+                showExcelResult(true, `转换成功！\n共处理 ${totalGroups} 个商品组`, filename);
                 
             } catch (error) {
                 addLog(`❌ 错误：${error.message}`);
